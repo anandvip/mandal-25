@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenTrack: Meditation Tracker</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --primary-color: #3498db;
+            --secondary-color: #e74c3c;
+        }
+        .dark-theme {
+            --bg-color: #333333;
+            --text-color: #ffffff;
+            --primary-color: #2980b9;
+            --secondary-color: #c0392b;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        #signOutBtn {
+            background-color: var(--secondary-color);
+        }
+        input, select, textarea {
+            margin-bottom: 10px;
+            padding: 5px;
+            width: 100%;
+        }
+        .progress-dials {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .dial {
+            width: 150px;
+            height: 150px;
+            position: relative;
+        }
+        .dial-bg, .dial-progress {
+            fill: none;
+            stroke: #ddd;
+            stroke-width: 10;
+        }
+        .dial-progress {
+            stroke: var(--primary-color);
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            transition: stroke-dasharray 0.3s;
+        }
+        .dial-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        #sessionHistory {
+            margin-top: 20px;
+        }
+        .session-entry {
+            background-color: rgba(52, 152, 219, 0.1);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            position: relative;
+        }
+        .session-note {
+            width: 100%;
+            min-height: 60px;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            padding: 5px;
+        }
+        .delete-btn, .save-note-btn {
+            padding: 5px 10px;
+            margin-right: 5px;
+        }
+        .delete-btn {
+            background-color: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>ZenTrack</h1>
+        <div class="header-buttons">
+            <button id="themeToggle">Toggle Theme</button>
+            <button id="signOutBtn">Sign Out</button>
+        </div>
+    </header>
+
+    <div id="mandalInfo">
+        <h2>Active Mandal: <span id="mandalName"></span></h2>
+        <p>Start Date: <span id="startDate"></span></p>
+        <p>End Date: <span id="endDate"></span></p>
+        <p>Days Remaining: <span id="daysRemaining"></span></p>
+    </div>
+
+    <div class="progress-dials">
+        <div class="dial">
+            <svg viewBox="0 0 100 100">
+                <circle class="dial-bg" cx="50" cy="50" r="45"/>
+                <circle id="mandalProgressDial" class="dial-progress" cx="50" cy="50" r="45"/>
+            </svg>
+            <div id="mandalProgressText" class="dial-text">0%</div>
+            <p>Mandal Progress</p>
+        </div>
+        <div class="dial">
+            <svg viewBox="0 0 100 100">
+                <circle class="dial-bg" cx="50" cy="50" r="45"/>
+                <circle id="dailyProgressDial" class="dial-progress" cx="50" cy="50" r="45"/>
+            </svg>
+            <div id="dailyProgressText" class="dial-text">0%</div>
+            <p>Daily Progress</p>
+        </div>
+        <div class="dial">
+            <svg viewBox="0 0 100 100">
+                <circle class="dial-bg" cx="50" cy="50" r="45"/>
+                <circle id="sessionProgressDial" class="dial-progress" cx="50" cy="50" r="45"/>
+            </svg>
+            <div id="sessionProgressText" class="dial-text">0:00</div>
+            <p>Session Progress</p>
+        </div>
+    </div>
+
+    <div id="sessionControls">
+        <button id="startSession">Start Session</button>
+        <button id="stopSession" style="display:none;">Stop Session</button>
+    </div>
+
+    <div id="addPastSession">
+        <h3>Add Past Session</h3>
+        <input type="date" id="pastDate" required>
+        <input type="number" id="pastDuration" placeholder="Duration (minutes)" required>
+        <select id="pastPhase">
+            <option value="morning">Morning</option>
+            <option value="evening">Evening</option>
+        </select>
+        <textarea id="pastReflection" placeholder="Reflection (optional)"></textarea>
+        <button id="addPastSessionBtn">Add Past Session</button>
+    </div>
+
+    <div id="sessionHistory">
+        <h3>Session History</h3>
+        <div id="sessionList"></div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const mandalName = document.getElementById('mandalName');
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        const daysRemaining = document.getElementById('daysRemaining');
+        const startSessionBtn = document.getElementById('startSession');
+        const stopSessionBtn = document.getElementById('stopSession');
+        const addPastSessionBtn = document.getElementById('addPastSessionBtn');
+        const themeToggle = document.getElementById('themeToggle');
+        const signOutBtn = document.getElementById('signOutBtn');
+        const sessionList = document.getElementById('sessionList');
+
+        // Progress Dials
+        const mandalProgressDial = document.getElementById('mandalProgressDial');
+        const mandalProgressText = document.getElementById('mandalProgressText');
+        const dailyProgressDial = document.getElementById('dailyProgressDial');
+        const dailyProgressText = document.getElementById('dailyProgressText');
+        const sessionProgressDial = document.getElementById('sessionProgressDial');
+        const sessionProgressText = document.getElementById('sessionProgressText');
+
+        // Global variables
+        let activeMandal = null;
+        let sessionStart = null;
+        let sessionInterval = null;
+
+        // Event Listeners
+        startSessionBtn.addEventListener('click', startSession);
+        stopSessionBtn.addEventListener('click', stopSession);
+        addPastSessionBtn.addEventListener('click', addPastSession);
+        themeToggle.addEventListener('click', toggleTheme);
+        signOutBtn.addEventListener('click', signOut);
+
+        // Functions
+        function initializeApp() {
+            loadMandal();
+            updateUI();
+        }
+
+        function loadMandal() {
+            const storedMandal = localStorage.getItem('activeMandal');
+            if (storedMandal) {
+                activeMandal = JSON.parse(storedMandal);
+            } else {
+                createNewMandal('My Meditation Journey', 48, new Date());
+            }
+        }
+
+        function createNewMandal(name, duration, startDate) {
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + duration - 1);
+            
+            activeMandal = {
+                name: name,
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString(),
+                duration: duration,
+                sessions: []
+            };
+            saveMandal();
+        }
+
+        function saveMandal() {
+            localStorage.setItem('activeMandal', JSON.stringify(activeMandal));
+        }
+
+        function updateUI() {
+            if (!activeMandal) return;
+
+            mandalName.textContent = activeMandal.name;
+            startDate.textContent = new Date(activeMandal.startDate).toLocaleDateString();
+            endDate.textContent = new Date(activeMandal.endDate).toLocaleDateString();
+
+            const now = new Date();
+            const start = new Date(activeMandal.startDate);
+            const end = new Date(activeMandal.endDate);
+            const totalDays = (end - start) / (1000 * 60 * 60 * 24);
+            const elapsedDays = Math.min(totalDays, Math.max(0, (now - start) / (1000 * 60 * 60 * 24)));
+
+            daysRemaining.textContent = Math.max(0, Math.ceil(totalDays - elapsedDays));
+
+            updateProgressDial(mandalProgressDial, mandalProgressText, elapsedDays / totalDays);
+            updateDailyProgress();
+            renderSessionHistory();
+        }
+
+        function updateProgressDial(dialElement, textElement, progress) {
+            const circumference = 2 * Math.PI * 45;
+            dialElement.style.strokeDasharray = `${circumference} ${circumference}`;
+            dialElement.style.strokeDashoffset = circumference * (1 - progress);
+            textElement.textContent = `${Math.round(progress * 100)}%`;
+        }
+
+        function updateDailyProgress() {
+            const today = new Date().toDateString();
+            const todaySessions = activeMandal.sessions.filter(session => new Date(session.date).toDateString() === today);
+            const totalDuration = todaySessions.reduce((sum, session) => sum + session.duration, 0);
+            const dailyGoal = 30; // Assuming 30 minutes daily goal
+            updateProgressDial(dailyProgressDial, dailyProgressText, Math.min(1, totalDuration / dailyGoal));
+        }
+
+        function renderSessionHistory() {
+            sessionList.innerHTML = '';
+            activeMandal.sessions.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((session, index) => {
+                const sessionEntry = document.createElement('div');
+                sessionEntry.className = 'session-entry';
+                sessionEntry.innerHTML = `
+                    <p>Date: ${new Date(session.date).toLocaleString()}</p>
+                    <p>Duration: ${session.duration} minutes</p>
+                    <p>Phase: ${session.phase}</p>
+                    <textarea class="session-note" data-index="${index}">${session.reflection || ''}</textarea>
+                    <button class="save-note-btn" data-index="${index}">Save Note</button>
+                    <button class="delete-btn" data-index="${index}">Delete Session</button>
+                `;
+                sessionList.appendChild(sessionEntry);
+            });
+
+            // Add event listeners to buttons
+            document.querySelectorAll('.save-note-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => saveNote(parseInt(e.target.dataset.index)));
+            });
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => deleteSession(parseInt(e.target.dataset.index)));
+            });
+        }
+
+        function startSession() {
+            sessionStart = new Date();
+            startSessionBtn.style.display = 'none';
+            stopSessionBtn.style.display = 'inline-block';
+            sessionInterval = setInterval(updateSessionProgress, 1000);
+        }
+
+        function stopSession() {
+            clearInterval(sessionInterval);
+            const sessionEnd = new Date();
+            const duration = Math.round((sessionEnd - sessionStart) / 60000); // in minutes
+
+            activeMandal.sessions.push({
+                date: sessionStart.toISOString(),
+                duration: duration,
+                phase: sessionStart.getHours() < 12 ? 'morning' : 'evening',
+                reflection: ''
+            });
+
+            saveMandal();
+            updateUI();
+            
+            startSessionBtn.style.display = 'inline-block';
+            stopSessionBtn.style.display = 'none';
+            updateProgressDial(sessionProgressDial, sessionProgressText, 0);
+        }
+
+        function updateSessionProgress() {
+            const elapsed = (new Date() - sessionStart) / 60000; // in minutes
+            const progress = Math.min(1, elapsed / 30); // Assuming 30-minute session goal
+            updateProgressDial(sessionProgressDial, sessionProgressText, progress);
+            const minutes = Math.floor(elapsed);
+            const seconds = Math.floor((elapsed - minutes) * 60);
+            sessionProgressText.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function addPastSession() {
+            const date = new Date(document.getElementById('pastDate').value);
+            const duration = parseInt(document.getElementById('pastDuration').value);
+            const phase = document.getElementById('pastPhase').value;
+            const reflection = document.getElementById('pastReflection').value.trim();
+
+            activeMandal.sessions.push({
+                date: date.toISOString(),
+                duration: duration,
+                phase: phase,
+                reflection: reflection
+            });
+
+            saveMandal();
+            updateUI();
+            
+            // Clear input fields
+            document.getElementById('pastDate').value = '';
+            document.getElementById('pastDuration').value = '';
+            document.getElementById('pastPhase').value = 'morning';
+            document.getElementById('pastReflection').value = '';
+        }
+
+        function saveNote(index) {
+            const noteTextarea = document.querySelector(`.session-note[data-index="${index}"]`);
+            activeMandal.sessions[index].reflection = noteTextarea.value.trim();
+            saveMandal();
+            updateUI();
+        }
+
+        function deleteSession(index) {
+            if (confirm('Are you sure you want to delete this session?')) {
+                activeMandal.sessions.splice(index, 1);
+                saveMandal();
+                updateUI();
+            }
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+        }
+
+       function signOut() {
+            if (confirm('Are you sure you want to sign out? This will clear all local data.')) {
+                localStorage.removeItem('activeMandal');
+                activeMandal = null;
+                updateUI();
+                alert('You have been signed out. All local data has been cleared.');
+            }
+        }
+
+        // Initialize the app
+        initializeApp();
+    </script>
+</body>
+</html>
