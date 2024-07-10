@@ -23,7 +23,6 @@
             color: var(--text-color);
             line-height: 1.6;
             padding: 20px;
-            max-width: 800px;
             margin: 0 auto;
             transition: background-color 0.3s, color 0.3s;
         }
@@ -54,13 +53,19 @@
             width: 100%;
         }
         .progress-dials {
-            display: flex;
-            justify-content: space-around;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 20px;
+            justify-content: center;
             margin: 20px 0;
         }
+        .dial-container {
+            text-align: center;
+        }
         .dial {
-            width: 150px;
-            height: 150px;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto;
             position: relative;
         }
         .dial-bg, .dial-progress {
@@ -80,7 +85,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 1.2em;
+            font-size: 1em;
             font-weight: bold;
         }
         #sessionHistory {
@@ -107,6 +112,14 @@
         .delete-btn {
             background-color: var(--secondary-color);
         }
+        #sessionControls {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        button#startSession, button#stopSession {
+            margin-top: 60px;
+        }
     </style>
 </head>
 <body>
@@ -126,28 +139,34 @@
     </div>
 
     <div class="progress-dials">
-        <div class="dial">
-            <svg viewBox="0 0 100 100">
-                <circle class="dial-bg" cx="50" cy="50" r="45"/>
-                <circle id="mandalProgressDial" class="dial-progress" cx="50" cy="50" r="45"/>
-            </svg>
-            <div id="mandalProgressText" class="dial-text">0%</div>
+        <div class="dial-container">
+            <div class="dial">
+                <svg viewBox="0 0 100 100">
+                    <circle class="dial-bg" cx="50" cy="50" r="45"/>
+                    <circle id="mandalProgressDial" class="dial-progress" cx="50" cy="50" r="45"/>
+                </svg>
+                <div id="mandalProgressText" class="dial-text">0%</div>
+            </div>
             <p>Mandal Progress</p>
         </div>
-        <div class="dial">
-            <svg viewBox="0 0 100 100">
-                <circle class="dial-bg" cx="50" cy="50" r="45"/>
-                <circle id="dailyProgressDial" class="dial-progress" cx="50" cy="50" r="45"/>
-            </svg>
-            <div id="dailyProgressText" class="dial-text">0%</div>
+        <div class="dial-container">
+            <div class="dial">
+                <svg viewBox="0 0 100 100">
+                    <circle class="dial-bg" cx="50" cy="50" r="45"/>
+                    <circle id="dailyProgressDial" class="dial-progress" cx="50" cy="50" r="45"/>
+                </svg>
+                <div id="dailyProgressText" class="dial-text">0%</div>
+            </div>
             <p>Daily Progress</p>
         </div>
-        <div class="dial">
-            <svg viewBox="0 0 100 100">
-                <circle class="dial-bg" cx="50" cy="50" r="45"/>
-                <circle id="sessionProgressDial" class="dial-progress" cx="50" cy="50" r="45"/>
-            </svg>
-            <div id="sessionProgressText" class="dial-text">0:00</div>
+        <div class="dial-container">
+            <div class="dial">
+                <svg viewBox="0 0 100 100">
+                    <circle class="dial-bg" cx="50" cy="50" r="45"/>
+                    <circle id="sessionProgressDial" class="dial-progress" cx="50" cy="50" r="45"/>
+                </svg>
+                <div id="sessionProgressText" class="dial-text">0:00</div>
+            </div>
             <p>Session Progress</p>
         </div>
     </div>
@@ -378,7 +397,7 @@
             document.body.classList.toggle('dark-theme');
         }
 
-       function signOut() {
+        function signOut() {
             if (confirm('Are you sure you want to sign out? This will clear all local data.')) {
                 localStorage.removeItem('activeMandal');
                 activeMandal = null;
